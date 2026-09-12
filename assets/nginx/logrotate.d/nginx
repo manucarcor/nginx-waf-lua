@@ -1,0 +1,9 @@
+/var/log/nginx/*.log {
+    hourly
+    maxsize 100M
+    rotate 5
+    compress
+    delaycompress
+    missingok
+    notifempty
+}

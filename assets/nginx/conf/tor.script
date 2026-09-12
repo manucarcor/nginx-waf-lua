@@ -1,0 +1,10 @@
+d=$(date)
+echo "update tor list $d" > /opt/tor.log
+
+cat /dev/null > /opt/ips_tor.txt
+cat /dev/null > /opt/nginx_deny_tor.txt
+
+curl https://check.torproject.org/exit-addresses |grep ExitAddress | awk '{print $2}' > /opt/ips_tor.txt
+while read line; do echo "deny $line;">> /opt/nginx_deny_tor.txt; done < /opt/ips_tor.txt
+
+

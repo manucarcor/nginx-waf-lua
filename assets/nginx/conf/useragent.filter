@@ -1,0 +1,4 @@
+    if ($http_user_agent ~* (^w3af.sourceforge.net|dirbuster|nikto|wpscan|SF|sqlmap|fimap|nessus|whatweb|Openvas|jbrofuzz|libwhisker|webshag)) {
+         return 444;
+    }
+

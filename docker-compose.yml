@@ -1,0 +1,32 @@
+# Demo rápida: levanta la imagen del WAF delante de un backend de ejemplo
+# ("whoami", que solo devuelve datos de la petición) para comprobar en segundos
+# que el proxy, el TLS y ModSecurity funcionan.
+#
+# Uso:
+#   bash scripts/generar-certificados-dev.sh
+#   docker compose up --build
+#   curl -k https://localhost/            # -> pasa por el WAF hasta "whoami"
+#   curl -k https://localhost/healthz      # -> "OK"
+#   curl -k https://localhost/metrics/nginx
+
+services:
+  backend:
+    image: traefik/whoami:latest
+    container_name: waf-demo-backend
+    expose:
+      - "80"
+
+  nginx-waf:
+    build: .
+    image: nginx-waf-lua:demo
+    container_name: waf-demo-nginx
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./assets/nginx/ssl:/etc/nginx/ssl:ro
+    environment:
+      ANOMALY_INBOUND: 5
+      ANOMALY_OUTBOUND: 4

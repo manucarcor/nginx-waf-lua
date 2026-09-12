@@ -1,0 +1,76 @@
+services:
+    jaeger:
+      image: jaegertracing/all-in-one:1.61.0
+      mem_limit: 1G
+      container_name: jaeger
+      ports:
+        - "16686:16686"
+        - "4317:4317"
+        - "4318:4318"
+        - "6831:6831"
+      environment:
+        - LOG_LEVEL=debug
+        - QUERY_BASE_PATH=/jaeger
+      networks:
+        nginx-net-local:
+          ipv4_address: 172.28.1.3
+
+    # Servidor gRPC de prueba: un servidor TCP sencillo que simula una respuesta gRPC
+    grpc-test-server:
+      image: busybox:latest
+      mem_limit: 128m
+      container_name: grpc-test-server
+      hostname: grpc-test-server
+      command: >
+        sh -c "
+        echo 'Arrancando servidor TCP simple en el puerto 50051 (simulando gRPC)...' &&
+        echo 'servidor de simulacion gRPC listo' > /tmp/response &&
+        while true; do
+          nc -l -p 50051 -e cat /tmp/response 2>/dev/null || sleep 1
+        done
+        "
+      ports:
+        - "50051:50051"
+      networks:
+        nginx-net-local:
+          ipv4_address: 172.28.1.4
+
+    nginx:
+      image: nginx-waf-lua:demo
+      mem_limit: 512m
+      mem_reservation: 256m
+      container_name: nginx
+      hostname: nginx
+      restart: always
+      networks:
+        nginx-net-local:
+          ipv4_address: 172.28.1.2
+      logging:
+          driver: "json-file"
+          options:
+              max-file: "5"
+              max-size: "100m"
+      environment:
+        MODSEC_DEFAULT_PHASE1_ACTION: "phase:1,log,auditlog,deny,status:403"
+        MODSEC_DEFAULT_PHASE2_ACTION: "phase:2,log,auditlog,deny,status:403"
+        ANOMALY_INBOUND: 5
+        ANOMALY_OUTBOUND: 4
+        BLOCKING_PARANOIA: 1
+      ports:
+        - 80:80
+        - 443:443
+        - 9443:9443  # puerto gRPC
+      volumes:
+        - ./configs/certs:/etc/nginx/ssl
+        - ./configs/conf:/etc/nginx/conf
+        - ./configs/conf.d:/etc/nginx/conf.d
+        #- ./logs/nginx:/var/log/nginx
+        - ./configs/nginx.conf:/etc/nginx/nginx.conf
+        - ./configs/conf/opentelemetry.conf:/etc/nginx/conf/opentelemetry.conf
+
+networks:
+    nginx-net-local:
+      ipam:
+        driver: default
+        config:
+          - subnet: 172.28.0.0/16

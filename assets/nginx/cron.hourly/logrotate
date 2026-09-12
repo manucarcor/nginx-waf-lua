@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run logrotate in hourly mode so configs with "hourly" are evaluated
+# Output goes to container stdout/stderr (fd 1/2)
+/usr/sbin/logrotate -f /etc/logrotate.conf >/proc/1/fd/1 2>/proc/1/fd/2

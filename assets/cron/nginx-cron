@@ -1,0 +1,3 @@
+*/5 * * * * root /bin/sh /opt/scripts/tor.script >> /proc/1/fd/1 2>> /proc/1/fd/2
+*/5 * * * * root /bin/sh /opt/modsecurity/activate-rules.sh >> /proc/1/fd/1 2>> /proc/1/fd/2
+* * * * * root /usr/bin/curl -fsS http://localhost >> /proc/1/fd/1 2>> /proc/1/fd/2

@@ -1,0 +1,10 @@
+# Certificados TLS autogenerados para desarrollo local
+# (ver scripts/generar-certificados-dev.sh) — nunca deben commitearse.
+assets/nginx/ssl/*.crt
+assets/nginx/ssl/*.key
+test/configs/certs/*.crt
+test/configs/certs/*.key
+
+# Sistemas operativos / editores
+.DS_Store
+Thumbs.db
