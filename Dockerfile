@@ -4,26 +4,24 @@
 FROM debian:12.11-slim AS build
 
 # Versiones / variables
-ENV VERSION=1.29.7 \
-    LUAJIT_VERSION=v2.1-20250529 \
-    MODSECURITY_VERSION=v3.0.14 \
+ENV VERSION=1.31.5 \
+    LUAJIT_VERSION=v2.1-20260824 \
+    MODSECURITY_VERSION=v3.0.16 \
     MODSECURITY_NGINX_VERSION=v1.0.4 \
-    NGXDEVELKIT_VERSION=0.3.3 \
-    NGXLUA_VERSION=0.10.28 \
-    OWASPCRS_VERSION=4.15.0 \
-    LUA_RESTY_CORE=0.1.31 \
+    NGXDEVELKIT_VERSION=0.3.4 \
+    NGXLUA_VERSION=0.10.29 \
+    OWASPCRS_VERSION=4.29.0 \
+    LUA_RESTY_CORE=0.1.32 \
     LUAJIT_LIB=/usr/local/lib \
     LUAJIT_INC=/usr/local/include/luajit-2.1 \
     LD_LIBRARY_PATH=/usr/local/lib \
-    RESTY_LRUCACHE_VERSION=0.15 \
-    OTEL_NGINX_VERSION=v0.1.5 \
-    MODSECURITY_DOCKER_VERSION=release/20250605
+    RESTY_LRUCACHE_VERSION=0.15
 
 # Dependencias de build
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential autoconf automake curl ca-certificates bash git \
-    libpcre3-dev libssl-dev libffi-dev libtool pkg-config zlib1g-dev wget \
+    libpcre3-dev libpcre2-dev libssl-dev libffi-dev libtool pkg-config zlib1g-dev wget \
     moreutils cmake libc-ares-dev libre2-dev libyajl-dev libyajl2 yajl-tools && \
     rm -rf /var/lib/apt/lists/*
 
@@ -36,7 +34,7 @@ RUN git clone --depth 1 -b ${LUAJIT_VERSION} https://github.com/openresty/luajit
 # ModSecurity (lib) + conector nginx
 RUN git clone --depth 1 -b ${MODSECURITY_NGINX_VERSION} https://github.com/owasp-modsecurity/ModSecurity-nginx.git /src/ModSecurity-nginx && \
     git clone --depth 1 -b ${MODSECURITY_VERSION} https://github.com/owasp-modsecurity/ModSecurity.git /src/ModSecurity && \
-    cd /src/ModSecurity && git submodule init && git submodule update && \
+    cd /src/ModSecurity && git submodule update --init --recursive && \
     ./build.sh && ./configure --with-yajl="/usr" && \
     make -j"$(nproc)" && make install
 
@@ -106,7 +104,7 @@ FROM debian:12.11-slim
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates bash curl moreutils cron gettext logrotate \
-    libpcre3 libc-ares2 libre2-9 libyajl2 libssl3 zlib1g && \
+    libpcre3 libpcre2-8-0 libc-ares2 libre2-9 libyajl2 libssl3 zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
 # Variables de entorno finales
@@ -114,6 +112,7 @@ ENV USER=nginx \
     LD_LIBRARY_PATH=/usr/local/lib:/opt/modsecurity/src/.libs \
     ANOMALY_INBOUND=5 \
     ANOMALY_OUTBOUND=4 \
+    BLOCKING_PARANOIA=1 \
     OPENSSL_VERSION=1.1.1w \
     PORT=80
 

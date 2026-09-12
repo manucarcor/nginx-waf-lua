@@ -1,0 +1,65 @@
+name: Build
+
+# Compila la imagen (NGINX + ModSecurity + Lua desde fuente) y comprueba con
+# un smoke test que el WAF deja pasar tráfico normal y bloquea SQLi/XSS -
+# las mismas pruebas descritas en el README.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generar certificados TLS de desarrollo
+        run: bash scripts/generar-certificados-dev.sh
+
+      - name: Build y arranque
+        run: docker compose up --build -d
+
+      - name: Esperar a que el servicio responda
+        run: |
+          for i in $(seq 1 30); do
+            if curl -ksf https://localhost/healthz; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El servicio no respondió a tiempo" >&2
+          exit 1
+
+      - name: El tráfico normal debe pasar (200)
+        run: |
+          code=$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/)
+          echo "HTTP $code"
+          test "$code" = "200"
+
+      - name: El WAF debe bloquear SQL injection (403)
+        run: |
+          code=$(curl -sk -o /dev/null -w '%{http_code}' --get https://localhost/ \
+            --data-urlencode "id=1' OR '1'='1")
+          echo "HTTP $code"
+          test "$code" = "403"
+
+      - name: El WAF debe bloquear XSS (403)
+        run: |
+          code=$(curl -sk -o /dev/null -w '%{http_code}' --get https://localhost/ \
+            --data-urlencode "q=<script>alert(1)</script>")
+          echo "HTTP $code"
+          test "$code" = "403"
+
+      - name: Logs del contenedor (siempre, para depurar fallos)
+        if: always()
+        run: docker compose logs
+
+      - name: Apagar
+        if: always()
+        run: docker compose down -v

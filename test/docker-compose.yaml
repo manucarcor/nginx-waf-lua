@@ -51,8 +51,6 @@ services:
               max-file: "5"
               max-size: "100m"
       environment:
-        MODSEC_DEFAULT_PHASE1_ACTION: "phase:1,log,auditlog,deny,status:403"
-        MODSEC_DEFAULT_PHASE2_ACTION: "phase:2,log,auditlog,deny,status:403"
         ANOMALY_INBOUND: 5
         ANOMALY_OUTBOUND: 4
         BLOCKING_PARANOIA: 1
